@@ -7,19 +7,9 @@ int PC_1::receiveFrameCount = 0;
 
 void PC_1::startSend(int command) {
   ACKStatus status;
-  Serial.print("Start Sending Session [");
-  Serial.print(command);
-  Serial.println("]");
   do {
-    // Serial.println("Making Frame...");
     int bits = PC_1::makeFrame(command, sendFrameCount);
-    for (int i = 7; i >= 0; --i) {
-      Serial.print((bits >> i) & 1);
-    }
-    Serial.println();
-    // Serial.println("Sending...");
     sendFrameDAC(bits, 8);
-    // Serial.println("Sent! Waiting for ACK");
     status = PC_1::waitingForACK();
   } while (status != ACKStatus::R);
   PC_1::sendFrameCount = (sendFrameCount + 1) % 2;
@@ -41,7 +31,7 @@ long PC_1::startReceive() {
         while(isReceived){
           PC_1::sendACK();
           long tmp = 0;
-          isReceived = receiveFrameDAC(&tmp, 16, 900);
+          isReceived = receiveFrameDAC(&tmp, 16, 800);
           if (tmp != 0 && tmp == receive) isReceived = true;
         }
         return receive;
@@ -75,7 +65,7 @@ int PC_1::makeFrame(int command, int frameNo) {
 
 ACKStatus PC_1::waitingForACK() {
   long receive = 0;
-  bool isReceived = receiveFrameDAC(&receive, 16,500);
+  bool isReceived = receiveFrameDAC(&receive, 16,1000);
   if (isReceived && ((receive >> 14) & 11) == 0 &&
       ((receive >> 13) & 1) == (PC_1::sendFrameCount + 1) % 2) {
     if (checkCRC(receive, 16)){
