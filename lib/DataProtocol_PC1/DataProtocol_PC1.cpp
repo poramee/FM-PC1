@@ -7,19 +7,23 @@ int PC_1::receiveFrameCount = 0;
 
 void PC_1::startSend(int command) {
   ACKStatus status;
+  Serial.print("Sending Request | ");
   do {
     int bits = PC_1::makeFrame(command, sendFrameCount);
+    Serial.print("#####");
     sendFrameDAC(bits, 8);
+    Serial.print("##########");
     status = PC_1::waitingForACK();
   } while (status != ACKStatus::R);
   PC_1::sendFrameCount = (sendFrameCount + 1) % 2;
-  Serial.println("Sending Session Completed");
+  Serial.print("#####");
+  Serial.println(" | 100%");
 }
 
 long PC_1::startReceive() {
   long receive = 0;
   bool isReceived = false;
-  Serial.println("Waiting for Frame...");
+  Serial.print("Receiving | ");
   while (!isReceived) {
     isReceived = receiveFrameDAC(&receive, 16, 500);
     bool crc = checkCRC(receive,16);
@@ -27,18 +31,20 @@ long PC_1::startReceive() {
         ((receive >> 14) & 3) != 0) {
       if(crc){
         receiveFrameCount = (receiveFrameCount + 1) % 2;
-        Serial.println("Data Received, Sending ACK");
+        Serial.print("##########");
+        // Serial.println("Data Received, Sending ACK");
         while(isReceived){
           PC_1::sendACK();
           long tmp = 0;
           isReceived = receiveFrameDAC(&tmp, 16, 800);
           if (tmp != 0 && tmp == receive) isReceived = true;
         }
+        Serial.println("########## | 100%");
         return receive;
       }
       else{
         receive = 0;
-        Serial.println("Incorrect Data, Frame Discarded");
+        // Serial.println("Incorrect Data, Frame Discarded");
         isReceived = false;
       }
     } else isReceived = false;
@@ -69,14 +75,14 @@ ACKStatus PC_1::waitingForACK() {
   if (isReceived && ((receive >> 14) & 11) == 0 &&
       ((receive >> 13) & 1) == (PC_1::sendFrameCount + 1) % 2) {
     if (checkCRC(receive, 16)){
-      Serial.println("ACK Received");
+      // Serial.println("ACK Received");
       return ACKStatus::R;
     }
     else{
-      Serial.println("Frame Received, Incorrect Data");
+      // Serial.println("Frame Received, Incorrect Data");
       return ACKStatus::NR;
     }
   }
-  Serial.println("ACK Not Received");
+  // Serial.println("ACK Not Received");
   return ACKStatus::NR;
 }
