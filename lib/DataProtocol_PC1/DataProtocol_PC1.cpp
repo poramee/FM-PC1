@@ -1,16 +1,15 @@
 #include "DataProtocol_PC1.hpp"
 
-//PC1
+// PC1
 int PC_1::sendFrameCount = 0;
 int PC_1::receiveFrameCount = 0;
-
 
 void PC_1::startSend(int command) {
   ACKStatus status;
   Serial.print("Sending Request");
   do {
     Serial.print(".");
-    int bits = PC_1::makeFrame(command, sendFrameCount);
+    long bits = PC_1::makeFrame(command, sendFrameCount);
     sendFrameDAC(bits, 8);
     status = PC_1::waitingForACK();
   } while (status != ACKStatus::R);
@@ -23,31 +22,60 @@ long PC_1::startReceive() {
   bool isReceived = false;
   Serial.print("Receiving");
   while (!isReceived) {
+    receive = 0;
+    Serial.print(".");
     isReceived = receiveFrameDAC(&receive, 16, 500);
-    bool crc = checkCRC(receive,16);
+    // for (int i = 15; i >= 0; --i) {
+    //   Serial.print((receive >> i) & 1);
+    // }
+    // Serial.print(" -> ");
+    // Serial.print(isReceived);
+    // Serial.print(" , ");
+    // Serial.print(((receive >> 13) & 1) == receiveFrameCount);
+    // Serial.print(" RFC = ");
+    // Serial.print(receiveFrameCount);
+    bool crc = checkCRC(receive, 16);
+    // Serial.print(" , ");
+    // Serial.println(crc);
+
+    if (!isReceived)
+      continue;
+    while ((isReceived && ((receive >> 13) & 1) != receiveFrameCount &&
+            ((receive >> 14) & 3) != 0)) {
+      PC_1::sendACK();
+      long tmp = 0;
+      isReceived = receiveFrameDAC(&tmp, 16, 1200);
+      if (isReceived && tmp != receive)
+        isReceived = false; // Another Frame
+      break;
+      if (!isReceived && tmp == receive)
+        isReceived = true; // Partial Bit
+    }
     if (isReceived && ((receive >> 13) & 1) == receiveFrameCount &&
         ((receive >> 14) & 3) != 0) {
-      if(crc){
+      if (crc) {
         receiveFrameCount = (receiveFrameCount + 1) % 2;
-        Serial.print(".");
         // Serial.println("Data Received, Sending ACK");
-        while(isReceived){
+        while (isReceived) {
           PC_1::sendACK();
           long tmp = 0;
-          isReceived = receiveFrameDAC(&tmp, 16, 800);
-          if (tmp != 0 && tmp == receive) isReceived = true;
+          isReceived = receiveFrameDAC(&tmp, 16, 1200);
+          if (isReceived && tmp != receive)
+            isReceived = false; // Another Frame
+          if (!isReceived && tmp == receive)
+            isReceived = true; // Partial Bit
         }
-        Serial.println("Received");
+        // Serial.println("Received");
         return receive;
-      }
-      else{
+      } else {
         receive = 0;
         // Serial.println("Incorrect Data, Frame Discarded");
         isReceived = false;
       }
-    } else isReceived = false;
+    } else
+      isReceived = false;
   }
-  
+
   return receive;
 }
 void PC_1::sendACK() {
@@ -69,14 +97,13 @@ int PC_1::makeFrame(int command, int frameNo) {
 
 ACKStatus PC_1::waitingForACK() {
   long receive = 0;
-  bool isReceived = receiveFrameDAC(&receive, 16,1000);
-  if (isReceived && ((receive >> 14) & 11) == 0 &&
+  bool isReceived = receiveFrameDAC(&receive, 16, 500);
+  if (isReceived && ((receive >> 14) & 3) == 0 &&
       ((receive >> 13) & 1) == (PC_1::sendFrameCount + 1) % 2) {
-    if (checkCRC(receive, 16)){
+    if (checkCRC(receive, 16)) {
       // Serial.println("ACK Received");
       return ACKStatus::R;
-    }
-    else{
+    } else {
       // Serial.println("Frame Received, Incorrect Data");
       return ACKStatus::NR;
     }

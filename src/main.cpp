@@ -8,16 +8,6 @@ using namespace PC_1;
 
 void interpret(long command);
 
-
-void clrscr(){
-      // Clear Screen
-    Serial.write(27);       // ESC command
-    Serial.print("[2J");    // clear screen command
-    Serial.write(27);
-    Serial.print("[H");     // cursor to home command
-}
-
-
 bool isScanned = false;
 int imgData[3] = {-1,-1,-1};
 
@@ -55,31 +45,38 @@ void loop() {
   digitalWrite(13, HIGH);
   if (Serial.available()) {
     if(!isScanned){
-      Serial.println(">> Start Scanning Session <<");
-      while(Serial.available()) Serial.read();
       interpret(1);
       isScanned = true;
-      Serial.println(">> Scanning Session Completed <<");
       printInstruction();
+      Serial.flush();
     }
     else{
       const int read = Serial.read() - '0';
+      while (Serial.available())
+        Serial.read();
       interpret(read);
+      printInstruction();
+      Serial.flush();
     }
+    Serial.flush();
   }
-  //   sendFrameDAC('K', 8);
-  //   long receive = 0;
-  //   while (!receiveFrameDAC(&receive, 8, 500)){}
-  //   for (int i = 6; i >= 0; i -= 2) {
-  //       Serial.print((receive >> (i + 1)) & 1);
-  //       Serial.print((receive >> i) & 1);
-  //       Serial.print(" ");
+    // Serial.println("SEND");
+    // sendFrameDAC(0b00001100, 8);
+    // delay(1000);
+  // long receiveMsg = 0;
+  // if (receiveFrameDAC(&receiveMsg, 8, 500)) {
+  //   Serial.print("Received Msg: ");
+  //   for (int i = 7; i >= 0; --i) {
+  //     Serial.print((receiveMsg >> i) & 1);
   //   }
-  //   Serial.println((char)receive);
+  //   Serial.print("   ");
+  //   Serial.println((char)receiveMsg);
+  // }
 }
 
 void interpret(long command) {
   if (command == 1) {
+    Serial.println(">> Start Scanning Session <<");
     startSend(command);
     long receive = startReceive();
 
@@ -88,54 +85,11 @@ void interpret(long command) {
     //   Serial.print((receive >> i) & 1);
     // }
     // Serial.println();
-
-    clrscr();
-
+    Serial.println();
     Serial.println("[ IMAGE SCANNED ]");
     Serial.print("  < LEFT >  ");
     Serial.print(" < CENTER > ");
-    Serial.print("  < RIGHT > ");
-
-    // Print illustration of the image
-    for (int i = 2; i >= 0; --i) {
-      const int translate = (receive >> ((i * 3) + 4)) & 7;
-      if (translate == 0){
-        Serial.println("    XXXX    ");
-        Serial.println("    XXXX    ");
-        Serial.println("    OOOO    ");
-        Serial.println("    OOOO    ");
-      }
-      else if (translate == 1){
-        Serial.println("    OOOO    ");
-        Serial.println("    OOOO    ");
-        Serial.println("    XXXX    ");
-        Serial.println("    XXXX    ");
-      }
-      else if (translate == 2){
-        Serial.println("    OOXX    ");
-        Serial.println("    OOXX    ");
-        Serial.println("    OOXX    ");
-        Serial.println("    OOXX    ");
-      }
-      else if (translate == 3){
-        Serial.println("    XXOO    ");
-        Serial.println("    XXOO    ");
-        Serial.println("    XXOO    ");
-        Serial.println("    XXOO    ");
-      }
-      else if (translate == 4){
-        Serial.println("    XOOO    ");
-        Serial.println("    XXOO    ");
-        Serial.println("    XXXO    ");
-        Serial.println("    XXXX    ");
-      }
-      else if (translate == 5){
-        Serial.println("    XXXX    ");
-        Serial.println("    OXXX    ");
-        Serial.println("    OOXX    ");
-        Serial.println("    OOOX    ");
-      }
-    }
+    Serial.println("  < RIGHT > ");
 
     for (int i = 2; i >= 0; --i) {
       const int translate = (receive >> ((i * 3) + 4)) & 7;
@@ -153,8 +107,9 @@ void interpret(long command) {
       else if (translate == 5)
         Serial.print("  'Lower'   ");
     }
+    Serial.println();
+    Serial.println(">> Scanning Session Completed <<");
   } else if (command >= 2 && command <= 4) {
-    clrscr();
     Serial.println(">> Start Getting Data Session <<");
     startSend(command);
     int imgDots[16][3];
@@ -170,11 +125,10 @@ void interpret(long command) {
         // for (int i = 15; i >= 0; --i) {
         //   Serial.print((receive >> i) & 1);
         // }
-        imgDots[dot][co] = (receive >> 4) & 0b111111111;
+        imgDots[dot][co] = (receive >> 4) & 0b11111111;
         Serial.println();
       }
     }
-    clrscr();
     Serial.println("[ IMAGE DATA RECEIVED ]");
     for(int i = 0;i < 16;++i){
       Serial.print("Dot #");
@@ -187,7 +141,6 @@ void interpret(long command) {
       Serial.println(imgDots[i][2]);
     }
     Serial.println(">> Getting Data Session Completed <<");
-    printInstruction();
   } else
       Serial.println("Invalid Command");
 }
