@@ -7,23 +7,21 @@ int PC_1::receiveFrameCount = 0;
 
 void PC_1::startSend(int command) {
   ACKStatus status;
-  Serial.print("Sending Request | ");
+  Serial.print("Sending Request");
   do {
+    Serial.print(".");
     int bits = PC_1::makeFrame(command, sendFrameCount);
-    Serial.print("#####");
     sendFrameDAC(bits, 8);
-    Serial.print("##########");
     status = PC_1::waitingForACK();
   } while (status != ACKStatus::R);
   PC_1::sendFrameCount = (sendFrameCount + 1) % 2;
-  Serial.print("#####");
-  Serial.println(" | 100%");
+  Serial.println("Sending Request Completed");
 }
 
 long PC_1::startReceive() {
   long receive = 0;
   bool isReceived = false;
-  Serial.print("Receiving | ");
+  Serial.print("Receiving");
   while (!isReceived) {
     isReceived = receiveFrameDAC(&receive, 16, 500);
     bool crc = checkCRC(receive,16);
@@ -31,7 +29,7 @@ long PC_1::startReceive() {
         ((receive >> 14) & 3) != 0) {
       if(crc){
         receiveFrameCount = (receiveFrameCount + 1) % 2;
-        Serial.print("##########");
+        Serial.print(".");
         // Serial.println("Data Received, Sending ACK");
         while(isReceived){
           PC_1::sendACK();
@@ -39,7 +37,7 @@ long PC_1::startReceive() {
           isReceived = receiveFrameDAC(&tmp, 16, 800);
           if (tmp != 0 && tmp == receive) isReceived = true;
         }
-        Serial.println("########## | 100%");
+        Serial.println("Received");
         return receive;
       }
       else{

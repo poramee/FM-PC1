@@ -46,7 +46,7 @@ void printInstruction(){
 void setup() {
   Transceiver::init();
   // Serial.println("<< PC_1 >>");
-  Serial.print("Press Any Key to Start Scanning");
+  Serial.println("Press Any Key to Start Scanning");
   pinMode(13, OUTPUT);
   radio.setFrequency(105.0);
 }
@@ -56,7 +56,8 @@ void loop() {
   if (Serial.available()) {
     if(!isScanned){
       Serial.println(">> Start Scanning Session <<");
-      interpret(0);
+      while(Serial.available()) Serial.read();
+      interpret(1);
       isScanned = true;
       Serial.println(">> Scanning Session Completed <<");
       printInstruction();
