@@ -38,11 +38,13 @@ void setup() {
   // Serial.println("<< PC_1 >>");
   Serial.println("Press Any Key to Start Scanning");
   pinMode(13, OUTPUT);
-  radio.setFrequency(105.0);
+  // radio.setFrequency(107.0);
+  radio.setFrequency(90.3);
 }
 
 void loop() {
   digitalWrite(13, HIGH);
+  long tmp = 0;
   if (Serial.available()) {
     if(!isScanned){
       interpret(1);
@@ -52,6 +54,7 @@ void loop() {
     }
     else{
       const int read = Serial.read() - '0';
+      Serial.println();
       while (Serial.available())
         Serial.read();
       interpret(read);
@@ -60,9 +63,16 @@ void loop() {
     }
     Serial.flush();
   }
+  else if(receiveFrameDAC(&tmp,16,500)){
+    sendACK();
+    delay(300);
+  }
+
+
     // Serial.println("SEND");
-    // sendFrameDAC(0b00001100, 8);
-    // delay(1000);
+    // sendFrameDAC(0b00100110, 8);
+    // delay(500);
+
   // long receiveMsg = 0;
   // if (receiveFrameDAC(&receiveMsg, 8, 500)) {
   //   Serial.print("Received Msg: ");
@@ -76,7 +86,7 @@ void loop() {
 
 void interpret(long command) {
   if (command == 1) {
-    Serial.println(">> Start Scanning Session <<");
+    // Serial.println(">> Start Scanning Session <<");
     startSend(command);
     long receive = startReceive();
 
@@ -109,6 +119,7 @@ void interpret(long command) {
     }
     Serial.println();
     Serial.println(">> Scanning Session Completed <<");
+    while(Serial.available()) Serial.read();
   } else if (command >= 2 && command <= 4) {
     Serial.println(">> Start Getting Data Session <<");
     startSend(command);
