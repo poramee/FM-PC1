@@ -2,13 +2,6 @@
 #include <Adafruit_MCP4725.h>
 #include <Wire.h>
 
-// #ifndef cbi
-// #define cbi(sfr,bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-// #endif
-// #ifndef sbi
-// #define sbi(sfr,bit) (_SFR_BYTE(sfr) |= _BV(bit))
-// #endif
-
 // Send & Receive Parameters
 Adafruit_MCP4725 dac;
 const int RxPin = A1;
@@ -22,8 +15,6 @@ const int baudTime = 9700;
 int cycle[4];
 
 void Transceiver::init() {
-  // sbi(ADCSRA, ADPS2); // this for increase analogRead Speed cbi(ADCSRA,ADPS1) ;
-  // cbi(ADCSRA, ADPS0);
   
   Serial.begin(115200);
   Serial.println("delay     cycle");
@@ -74,7 +65,6 @@ int generateCRC(long data, int length) {
   return bits;
 }
 void sendFrameDAC(long bits, int length) {
-  // possible length value are 8 and 22
   dac.setVoltage(S_DAC[0], false);
   for (int i = length - 2; i >= 0; i -= 2) {
     const int level = ((bits >> i) & 3);

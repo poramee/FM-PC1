@@ -35,10 +35,8 @@ void printInstruction(){
 
 void setup() {
   Transceiver::init();
-  // Serial.println("<< PC_1 >>");
   Serial.println("Press Any Key to Start Scanning");
   pinMode(13, OUTPUT);
-  // radio.setFrequency(107.0);
   radio.setFrequency(90.3);
 }
 
@@ -67,34 +65,12 @@ void loop() {
     sendACK();
     delay(300);
   }
-
-
-    // Serial.println("SEND");
-    // sendFrameDAC(0b00100110, 8);
-    // delay(500);
-
-  // long receiveMsg = 0;
-  // if (receiveFrameDAC(&receiveMsg, 8, 500)) {
-  //   Serial.print("Received Msg: ");
-  //   for (int i = 7; i >= 0; --i) {
-  //     Serial.print((receiveMsg >> i) & 1);
-  //   }
-  //   Serial.print("   ");
-  //   Serial.println((char)receiveMsg);
-  // }
 }
 
 void interpret(long command) {
   if (command == 1) {
-    // Serial.println(">> Start Scanning Session <<");
     startSend(command);
     long receive = startReceive();
-
-    // Serial.print("Receive Message: ");
-    // for (int i = 15; i >= 0; --i) {
-    //   Serial.print((receive >> i) & 1);
-    // }
-    // Serial.println();
     Serial.println();
     Serial.println("[ IMAGE SCANNED ]");
     Serial.print("  < LEFT >  ");
@@ -132,10 +108,6 @@ void interpret(long command) {
         Serial.print(co);
         Serial.print("] ");
         long receive = startReceive();
-        // Serial.print("Received Message: ");
-        // for (int i = 15; i >= 0; --i) {
-        //   Serial.print((receive >> i) & 1);
-        // }
         imgDots[dot][co] = (receive >> 4) & 0b11111111;
         Serial.println();
       }

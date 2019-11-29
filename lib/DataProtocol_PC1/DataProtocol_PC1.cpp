@@ -26,10 +26,6 @@ long PC_1::startReceive() {
     receive = 0;
     Serial.print(".");
     isReceived = receiveFrameDAC(&receive, 16, 500);
-    // for(int i = 15;i >= 0;--i){
-    //   Serial.print((receive >> i) & 1);
-    // }
-    // Serial.println("");
 
     delayMicroseconds(300000);
     bool crc = checkCRC(receive, 16);
@@ -49,6 +45,7 @@ long PC_1::startReceive() {
       if (!isReceived && tmp == receive)
         isReceived = true; // Partial Bit
     }
+
     if (isReceived && ((receive >> 13) & 1) == receiveFrameCount &&
         ((receive >> 14) & 3) != 0) {
       if (crc) {
@@ -61,8 +58,6 @@ long PC_1::startReceive() {
           isReceived = receiveFrameDAC(&tmp, 16, 1100);
           if (isReceived && tmp != receive)
             isReceived = false; // Another Frame
-          // if (!isReceived && tmp == receive)
-          //   isReceived = true; // Partial Bit
         }
         // Serial.println("Received");
         return receive;
